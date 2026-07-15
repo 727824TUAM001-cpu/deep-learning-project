@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Prediction History{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">
+      <i class="fas fa-clock-rotate-left" style="color:var(--accent-cyan);margin-right:10px;"></i>Prediction History
+    </h1>
+    <p class="page-subtitle">
+      {% if current_user.is_admin %}All predictions across all users{% else %}Your diagnostic records{% endif %}
+    </p>
+  </div>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <input type="text" id="tableSearch" class="search-input" placeholder="🔍 Search records…"/>
+    <a href="{{ url_for('predict') }}" class="btn-primary-ai">
+      <i class="fas fa-plus" style="margin-right:6px;"></i>New
+    </a>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="glass-card fade-up">
+    <div class="card-header-bar" style="justify-content:space-between;">
+      <span>
+        <i class="fas fa-table-list" style="color:var(--accent-cyan);"></i>
+        Records ({{ predictions|length }})
+      </span>
+      {% if predictions %}
+      <button onclick="exportCSV()" style="font-size:13px;color:var(--accent-cyan);background:none;border:none;cursor:pointer;">
+        <i class="fas fa-file-csv"></i> Export CSV
+      </button>
+      {% endif %}
+    </div>
+
+    <div style="overflow-x:auto;">
+      <table class="ai-table" id="historyTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Patient</th>
+            <th>Age</th>
+            <th>Gender</th>
+            <th>Prediction</th>
+            <th>Confidence</th>
+            <th>Normal %</th>
+            <th>Pneumonia %</th>
+            <th>Date</th>
+            <th>Image</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if predictions %}
+            {% for p in predictions %}
+            <tr>
+              <td style="color:var(--text-muted);">{{ loop.index }}</td>
+              <td><strong>{{ p.patient_name }}</strong></td>
+              <td>{{ p.age or '—' }}</td>
+              <td>{{ p.gender or '—' }}</td>
+              <td>
+                <span class="{% if p.prediction == 'Normal' %}badge-normal{% else %}badge-pneumonia{% endif %}">
+                  {% if p.prediction == 'Normal' %}✔ Normal{% else %}⚠ Pneumonia{% endif %}
+                </span>
+              </td>
+              <td>
+                <span style="font-weight:600;color:{% if p.prediction == 'Normal' %}var(--accent-green){% else %}var(--accent-red){% endif %}">
+                  {{ p.confidence }}%
+                </span>
+              </td>
+              <td style="color:var(--accent-green);">{{ p.normal_prob }}%</td>
+              <td style="color:var(--accent-red);">{{ p.pneumonia_prob }}%</td>
+              <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">
+                {{ p.prediction_date.strftime('%d %b %Y') }}<br>
+                <span style="font-size:11px;">{{ p.prediction_date.strftime('%H:%M') }}</span>
+              </td>
+              <td>
+                <a href="{{ url_for('static', filename=p.image_path) }}" target="_blank"
+                   style="color:var(--accent-cyan);font-size:13px;text-decoration:none;">
+                  <i class="fas fa-image"></i> View
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="10" style="text-align:center;padding:48px;color:var(--text-muted);">
+                <div style="font-size:36px;margin-bottom:12px;opacity:0.4;">📋</div>
+                No predictions yet.
+                <a href="{{ url_for('predict') }}" style="color:var(--accent-cyan);margin-left:6px;">Upload your first X-ray →</a>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportCSV() {
+  const rows = [['#','Patient','Age','Gender','Prediction','Confidence','Normal%','Pneumonia%','Date']];
+  document.querySelectorAll('#historyTable tbody tr').forEach((tr, i) => {
+    const cells = [...tr.querySelectorAll('td')];
+    if (cells.length > 2) {
+      rows.push([
+        i+1,
+        cells[1].textContent.trim(),
+        cells[2].textContent.trim(),
+        cells[3].textContent.trim(),
+        cells[4].textContent.trim(),
+        cells[5].textContent.trim(),
+        cells[6].textContent.trim(),
+        cells[7].textContent.trim(),
+        cells[8].textContent.trim().replace(/\n+/g,' '),
+      ]);
+    }
+  });
+  const csv  = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'pneumonia_predictions.csv';
+  a.click();
+}
+</script>
+{% endblock %}

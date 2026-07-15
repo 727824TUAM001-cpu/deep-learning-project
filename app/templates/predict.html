@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Predict X-Ray{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">
+      <i class="fas fa-microscope" style="color:var(--accent-cyan);margin-right:10px;"></i>Predict X-Ray
+    </h1>
+    <p class="page-subtitle">Upload a chest X-ray image for AI-powered pneumonia analysis</p>
+  </div>
+</div>
+
+<div class="page-body">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+
+    <!-- ── Upload Panel ── -->
+    <div class="glass-card fade-up">
+      <div class="card-header-bar">
+        <i class="fas fa-upload" style="color:var(--accent-cyan);"></i>Upload X-Ray Image
+      </div>
+      <div class="card-body">
+        <form id="predictForm" method="POST" action="{{ url_for('predict') }}" enctype="multipart/form-data">
+
+          <!-- Patient Info -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Patient Name *</label>
+              <input name="patient_name" type="text" class="form-input"
+                     placeholder="Full name" required/>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Age</label>
+              <input name="age" type="number" class="form-input" placeholder="Years"
+                     min="1" max="120"/>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:20px;">
+            <label class="form-label">Gender</label>
+            <select name="gender" class="form-input">
+              <option value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- Upload Zone -->
+          <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon"><i class="fas fa-cloud-arrow-up"></i></div>
+            <h3>Drag &amp; Drop X-Ray Here</h3>
+            <p>or click to browse files</p>
+            <p style="margin-top:10px;font-size:12px;color:var(--text-muted);">
+              Supported: JPG, JPEG, PNG — Max 16 MB
+            </p>
+          </div>
+          <input type="file" id="xrayInput" name="xray_image" accept=".jpg,.jpeg,.png"
+                 style="display:none;" required/>
+
+          <!-- Image Preview -->
+          <div class="preview-container" id="previewContainer" style="margin-top:14px;">
+            <div class="preview-badge">📷 X-Ray Preview</div>
+            <img id="previewImg" src="" alt="X-ray preview"/>
+            <div style="padding:10px 14px;display:flex;gap:10px;background:rgba(0,0,0,0.3);">
+              <button type="button" onclick="resetUpload()"
+                      style="font-size:12px;color:var(--text-muted);background:none;border:none;cursor:pointer;">
+                <i class="fas fa-rotate-left"></i> Change image
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary-ai"
+                  style="width:100%;padding:13px;margin-top:20px;font-size:15px;">
+            <i class="fas fa-brain" style="margin-right:8px;"></i>Analyze X-Ray
+          </button>
+
+        </form>
+      </div>
+    </div>
+
+    <!-- ── Result Panel ── -->
+    <div>
+
+      {% if result %}
+      <!-- Result Card -->
+      <div class="glass-card fade-up result-card" style="margin-bottom:20px;">
+        <div class="card-header-bar">
+          <i class="fas fa-file-medical" style="color:var(--accent-cyan);"></i>AI Diagnostic Report
+        </div>
+        <div class="card-body">
+
+          <!-- Prediction Badge -->
+          <div class="result-badge {% if result.prediction == 'Normal' %}result-normal{% else %}result-pneumonia{% endif %}">
+            {% if result.prediction == 'Normal' %}
+              <i class="fas fa-circle-check"></i> NORMAL
+            {% else %}
+              <i class="fas fa-triangle-exclamation"></i> PNEUMONIA DETECTED
+            {% endif %}
+          </div>
+
+          <!-- Confidence Ring -->
+          <div class="confidence-ring" id="confRing"
+               data-conf="{{ result.confidence }}"
+               data-type="{{ result.prediction }}"
+               style="margin:20px 0;">
+          </div>
+
+          <!-- Probability Bars -->
+          <div style="margin-top:20px;">
+            <div class="prob-bar-wrap">
+              <div class="prob-label">
+                <span><i class="fas fa-circle-check" style="color:var(--accent-green);margin-right:5px;"></i>Normal</span>
+                <span>{{ result.normal_prob }}%</span>
+              </div>
+              <div class="prob-bar">
+                <div class="prob-bar-fill bar-normal" data-width="{{ result.normal_prob }}" style="width:0%"></div>
+              </div>
+            </div>
+
+            <div class="prob-bar-wrap">
+              <div class="prob-label">
+                <span><i class="fas fa-triangle-exclamation" style="color:var(--accent-red);margin-right:5px;"></i>Pneumonia</span>
+                <span>{{ result.pneumonia_prob }}%</span>
+              </div>
+              <div class="prob-bar">
+                <div class="prob-bar-fill bar-pneumonia" data-width="{{ result.pneumonia_prob }}" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:20px;padding:14px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid var(--border-glass);">
+            <p style="font-size:11px;color:var(--text-muted);text-align:center;">
+              <i class="fas fa-circle-info" style="color:var(--accent-cyan);"></i>
+              This is an AI-assisted result. Always consult a licensed radiologist for clinical decisions.
+            </p>
+          </div>
+
+          <a href="{{ url_for('history') }}" class="btn-primary-ai"
+             style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;text-decoration:none;">
+            <i class="fas fa-clock-rotate-left"></i>View in History
+          </a>
+        </div>
+      </div>
+
+      {% else %}
+      <!-- Placeholder when no result -->
+      <div class="glass-card fade-up" style="text-align:center;padding:60px 24px;">
+        <div style="font-size:64px;margin-bottom:20px;opacity:0.4;">🫁</div>
+        <h3 style="font-size:16px;color:var(--text-secondary);margin-bottom:8px;">
+          Awaiting X-Ray Upload
+        </h3>
+        <p style="font-size:13px;color:var(--text-muted);max-width:280px;margin:0 auto;">
+          Upload a chest X-ray image on the left and click <strong>Analyze X-Ray</strong> to get an instant AI prediction.
+        </p>
+
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:28px;text-align:left;max-width:260px;margin-left:auto;margin-right:auto;">
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);">
+            <i class="fas fa-check" style="color:var(--accent-cyan);"></i>CNN + LSTM hybrid model
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);">
+            <i class="fas fa-check" style="color:var(--accent-cyan);"></i>Prediction in &lt;5 seconds
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);">
+            <i class="fas fa-check" style="color:var(--accent-cyan);"></i>Confidence score &amp; probabilities
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);">
+            <i class="fas fa-check" style="color:var(--accent-cyan);"></i>Auto-saved to history
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function resetUpload() {
+  document.getElementById('previewContainer').style.display = 'none';
+  document.getElementById('uploadZone').style.display = 'block';
+  document.getElementById('xrayInput').value = '';
+}
+</script>
+{% endblock %}

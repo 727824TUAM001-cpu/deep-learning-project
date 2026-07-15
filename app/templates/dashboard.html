@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">
+      <i class="fas fa-chart-pie" style="color:var(--accent-cyan);margin-right:10px;"></i>Dashboard
+    </h1>
+    <p class="page-subtitle">
+      {% if current_user.is_admin %}System-wide overview{% else %}Your diagnostic overview{% endif %}
+    </p>
+  </div>
+  <a href="{{ url_for('predict') }}" class="btn-primary-ai">
+    <i class="fas fa-plus" style="margin-right:6px;"></i>New Prediction
+  </a>
+</div>
+
+<div class="page-body">
+
+  <!-- ── Stat Cards ── -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px;">
+
+    <div class="glass-card stat-card stat-cyan fade-up">
+      <div class="stat-icon"><i class="fas fa-lungs"></i></div>
+      <div class="stat-value">{{ total }}</div>
+      <div class="stat-label">Total Predictions</div>
+    </div>
+
+    <div class="glass-card stat-card stat-red fade-up" style="animation-delay:.08s">
+      <div class="stat-icon"><i class="fas fa-virus"></i></div>
+      <div class="stat-value">{{ pneumonia }}</div>
+      <div class="stat-label">Pneumonia Cases</div>
+    </div>
+
+    <div class="glass-card stat-card stat-green fade-up" style="animation-delay:.16s">
+      <div class="stat-icon"><i class="fas fa-heart-pulse"></i></div>
+      <div class="stat-value">{{ normal }}</div>
+      <div class="stat-label">Normal Cases</div>
+    </div>
+
+    <div class="glass-card stat-card stat-yellow fade-up" style="animation-delay:.24s">
+      <div class="stat-icon"><i class="fas fa-bullseye"></i></div>
+      <div class="stat-value">{% if model_accuracy %}{{ model_accuracy }}%{% else %}—{% endif %}</div>
+      <div class="stat-label">Model Accuracy</div>
+    </div>
+
+  </div>
+
+  <!-- ── Charts Row ── -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:28px;">
+
+    <div class="glass-card fade-up" style="animation-delay:.3s">
+      <div class="card-header-bar">
+        <i class="fas fa-chart-line" style="color:var(--accent-cyan);"></i>
+        Predictions — Last 7 Days
+      </div>
+      <div class="card-body" style="height:240px;">
+        <canvas id="lineChart"></canvas>
+      </div>
+    </div>
+
+    <div class="glass-card fade-up" style="animation-delay:.36s">
+      <div class="card-header-bar">
+        <i class="fas fa-chart-donut" style="color:var(--accent-cyan);"></i>
+        Case Distribution
+      </div>
+      <div class="card-body" style="height:240px;">
+        <canvas id="donutChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Model Plots ── -->
+  {% set plots = [('confusion_matrix.png','Confusion Matrix'), ('roc_curve.png','ROC Curve'), ('training_history.png','Training History')] %}
+  {% set available = [] %}
+  {% for fname, label in plots %}
+    {% if (config.PLOTS_FOLDER + '/' + fname)|replace('\\','/')|replace(config.PLOTS_FOLDER,'') %}
+    {% endif %}
+  {% endfor %}
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-bottom:28px;">
+    {% for fname, label in [('confusion_matrix.png','Confusion Matrix'), ('roc_curve.png','ROC Curve'), ('training_history.png','Training History')] %}
+    <div class="glass-card fade-up">
+      <div class="card-header-bar">
+        <i class="fas fa-chart-bar" style="color:var(--accent-cyan);"></i>{{ label }}
+      </div>
+      <div class="card-body" style="padding:12px;">
+        <img src="{{ url_for('static', filename='plots/' + fname) }}"
+             alt="{{ label }}"
+             style="width:100%;border-radius:8px;display:block;"
+             onerror="this.parentElement.innerHTML='<p style=\'color:var(--text-muted);text-align:center;padding:30px;font-size:13px;\'>Run <code>python training/evaluate.py</code> to generate this plot.</p>'"/>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ── Recent Predictions ── -->
+  <div class="glass-card fade-up">
+    <div class="card-header-bar" style="justify-content:space-between;">
+      <span><i class="fas fa-clock-rotate-left" style="color:var(--accent-cyan);"></i> Recent Predictions</span>
+      <a href="{{ url_for('history') }}" style="font-size:13px;color:var(--accent-cyan);text-decoration:none;">View all →</a>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <table class="ai-table">
+        <thead>
+          <tr>
+            <th>Patient</th><th>Age</th><th>Gender</th>
+            <th>Prediction</th><th>Confidence</th><th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if recent %}
+            {% for p in recent %}
+            <tr>
+              <td><strong>{{ p.patient_name }}</strong></td>
+              <td>{{ p.age or '—' }}</td>
+              <td>{{ p.gender or '—' }}</td>
+              <td>
+                <span class="{% if p.prediction == 'Normal' %}badge-normal{% else %}badge-pneumonia{% endif %}">
+                  {{ p.prediction }}
+                </span>
+              </td>
+              <td>{{ p.confidence }}%</td>
+              <td style="color:var(--text-muted);font-size:13px;">
+                {{ p.prediction_date.strftime('%d %b %Y, %H:%M') }}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);">
+                No predictions yet.
+                <a href="{{ url_for('predict') }}" style="color:var(--accent-cyan);">Upload your first X-ray →</a>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

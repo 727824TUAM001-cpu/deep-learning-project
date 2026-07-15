@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card fade-up">
+
+    <div class="auth-logo">
+      <div class="logo-circle">🫁</div>
+      <h1>PneumoAI</h1>
+      <p>Create your diagnostic account</p>
+    </div>
+
+    <h2 class="auth-title">Create Account</h2>
+    <p class="auth-sub">Join the AI-powered diagnostic platform</p>
+
+    <form method="POST" action="{{ url_for('register') }}">
+
+      <div class="form-group">
+        <label class="form-label" for="username">Full Name / Username</label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-user inp-icon"></i>
+          <input id="username" name="username" type="text" class="form-input"
+                 placeholder="Dr. Sharma" required minlength="3" maxlength="80"/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-envelope inp-icon"></i>
+          <input id="email" name="email" type="email" class="form-input"
+                 placeholder="doctor@hospital.com" required/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-lock inp-icon"></i>
+          <input id="password" name="password" type="password" class="form-input"
+                 placeholder="Min. 8 characters" required minlength="8"/>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:26px;">
+        <label class="form-label" for="confirm_password">Confirm Password</label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-lock inp-icon"></i>
+          <input id="confirm_password" name="confirm_password" type="password" class="form-input"
+                 placeholder="Repeat password" required minlength="8"/>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary-ai" style="width:100%;padding:13px;">
+        <i class="fas fa-user-plus" style="margin-right:8px;"></i>Create Account
+      </button>
+    </form>
+
+    <p style="text-align:center;margin-top:22px;font-size:13px;color:var(--text-muted);">
+      Already have an account?
+      <a href="{{ url_for('login') }}" style="color:var(--accent-cyan);text-decoration:none;font-weight:600;">Sign in</a>
+    </p>
+
+  </div>
+</div>
+{% endblock %}

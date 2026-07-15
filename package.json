@@ -1,0 +1,21 @@
+{
+  "name": "ai-pneumonia-detection",
+  "version": "1.0.0",
+  "description": "AI-Powered Pneumonia Detection from Chest X-Rays Using CNN-LSTM Hybrid Deep Learning Model",
+  "main": "run.py",
+  "scripts": {
+    "start": "python run.py",
+    "dev": "python run.py",
+    "train": "python training/train_model.py",
+    "evaluate": "python training/evaluate.py",
+    "placeholder": "python models/create_placeholder_model.py"
+  },
+  "keywords": [
+    "pneumonia-detection",
+    "cnn-lstm",
+    "deep-learning",
+    "flask"
+  ],
+  "author": "",
+  "license": "ISC"
+}
